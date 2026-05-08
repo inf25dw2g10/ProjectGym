@@ -1,0 +1,1011 @@
+openapi: 3.0.0
+info:
+  title: Project Gym API
+  version: 2.0.0
+  description: |
+    API *REST* para gestão de ginásio: planos de treino, exercícios, sessões, avaliações físicas e metas.
+    
+    
+    | Utilizador | *Password* | *API Key* |
+    |---|---|---|
+    | admin | admin123 | `apikey_admin_001` |
+    | treinador | treinador123 | `apikey_treinador_001` |
+    | cliente | cliente123 | `apikey_cliente_001` |
+
+servers:
+  - url: http://localhost:3000
+    description: Project Gym API
+
+tags:
+  - name: Autenticação 
+  - name: Planos de Treino
+  - name: Exercícios
+  - name: Sessões
+  - name: Avaliações Físicas
+  - name: Metas
+  - name: Utilizadores
+
+security:
+  - apiKeyAuth: []
+  - basicAuth: []
+
+paths:
+  # Autenticação
+  /auth/register:
+    post:
+      tags: [Autenticação]
+      summary: Registar utilizador com email e password
+      description: |
+        **Mínimo de caracteres:**
+        `{username}`: 3 , 
+        `{password}`: 6
+        
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, username]
+              properties:
+                email:       { type: string, format: email }
+                password:    { type: string, minLength: 6 }
+                username:    { type: string, minLength: 3 }
+                displayName: { type: string }
+            example:
+              email: novo@gym.pt
+              password: "password123"
+              username: novo_cliente
+      responses:
+        '201':
+          description: Utilizador criado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  id:       { type: integer }
+                  apiKey:   { type: string }
+        '409':
+          description: Email já registado
+          
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: "*Login* com email/*username* e *password*"
+      description: |
+        Aceita autenticação de **três formas**:
+
+         **Body *JSON*** - `{usernameOrEmail, password}` em texto normal.
+           O servidor autentica via `passport-local` e cria sessão.
+
+         **Header *Basic Auth*** - `Authorization: Basic base64(username:password)` (podes usar *username* ou email).
+
+         **Header *X-API-Key*** - se passares `X-API-Key`, podes chamar este endpoint **sem body**
+           para validar a chave e criar sessão.
+        
+      security:
+        - apiKeyAuth: []
+        - basicAuth: []
+        - {}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usernameOrEmail: { type: string, example: "cliente@gym.pt" }
+                password:        { type: string, example: "cliente123" }
+      responses:
+        '200':
+          description: Login com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  id:       { type: integer }
+                  role:     { type: string }
+                  apiKey:   { type: string }
+        '401':
+          description: Credenciais inválidas
+
+  /auth/logout:
+    get:
+      tags: [Autenticação]
+      summary: Terminar sessão
+      responses:
+        '200':
+          description: Sessão terminada.
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+  # Utilizadores
+  /users:
+    get:
+      tags: [Utilizadores]
+      summary: Listar utilizadores
+      description: |
+        **Admin**: Lista todos os utilizadores  
+        **Treinador**: Lista clientes do seu âmbito (clientes em planos profissionais do treinador autenticado) e também clientes sem qualquer plano profissional associado a treinador  
+        **Cliente**: Não tem acesso
+      parameters:
+        - $ref: '#/components/parameters/ClienteIdAdminTreinadorQuery'
+        - $ref: '#/components/parameters/TreinadorIdAdminQuery'
+      responses:
+        '200':
+          description: Lista de utilizadores
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+
+  /users/me:
+    get:
+      tags: [Utilizadores]
+      summary: Ver perfil do utilizador autenticado
+      responses:
+        '200':
+          description: Dados do utilizador autenticado
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+  /users/me/api-key:
+    post:
+      tags: [Utilizadores]
+      summary: Regenerar *API key*
+      responses:
+        '200':
+          description: Nova API key gerada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensagem: { type: string }
+                  apiKey:   { type: string }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+  /users/{id}/role:
+    put:
+      tags: [Utilizadores]
+      summary: Alterar role de um utilizador - apenas admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [admin, treinador, cliente]
+            example:
+              role: treinador
+      responses:
+        '200':
+          description: Role atualizado
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403':
+          description: Sem permissão
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+              example:
+                erro: "Acesso negado. Requer role: admin."
+        '404':
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+              example:
+                erro: "Utilizador não encontrado."
+
+  # Planos de Treino
+  /planos:
+    get:
+      tags: [Planos de Treino]
+      summary: Listar planos de treino
+      description: |
+        **Admin**: Vê todos os planos  
+        **Treinador**: Vê apenas planos aos quais está associado  
+        **Cliente**: Vê apenas planos aos quais está associado 
+      parameters:
+        - $ref: '#/components/parameters/ClienteIdAdminTreinadorQuery'
+      responses:
+        '200':
+          description: Lista de planos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PlanoTreino' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+    post:
+      tags: [Planos de Treino]
+      summary: Criar plano de treino
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Cria plano profissional para um cliente   
+        **Cliente**: Cria plano pessoal para si próprio (sem associar nenhum treinador)  
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo, objetivo, duracaoSem]
+              properties:
+                titulo:     { type: string }
+                descricao:  { type: string }
+                objetivo:
+                  type: string
+                  enum: [emagrecimento, hipertrofia, resistencia, flexibilidade, saude_geral]
+                duracaoSem: { type: integer }
+                clienteId:  { type: integer, description: "Obrigatório para treinadores" }
+      responses:
+        '201':
+          description: Plano criado
+        '400': { $ref: '#/components/responses/ErroValidacao' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+  /planos/{id}:
+    get:
+      tags: [Planos de Treino]
+      summary: Obter plano por ID
+      description: |
+        **Admin**: Vê todos os planos  
+        **Treinador**: Vê apenas planos aos quais está associado  
+        **Cliente**: Vê apenas planos aos quais está associado 
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Plano encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanoTreino' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+    put:
+      tags: [Planos de Treino]
+      summary: Atualizar plano
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Apenas planos profissionais em que é responsável  
+        **Cliente**: Apenas os próprios planos pessoais  
+
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:     { type: string }
+                descricao:  { type: string }
+                objetivo:   { type: string }
+                duracaoSem: { type: integer }
+                ativo:      { type: boolean }
+                treinadorId: { type: integer, description: "Permitido apenas para admin" }
+                clienteId:   { type: integer, description: "Permitido apenas para admin" }
+                tipo:        { type: string, enum: [pessoal, profissional], description: "Permitido apenas para admin" }
+      responses:
+        '200': { description: Plano atualizado }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+    delete:
+      tags: [Planos de Treino]
+      summary: Apagar plano 
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Apenas planos profissionais em que é responsável  
+        **Cliente**: Apenas os próprios planos pessoais  
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Plano apagado }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+  # Exercícios
+  /exercicios:
+    get:
+      tags: [Exercícios]
+      summary: Listar exercícios
+      description: |
+        **Admin**: Vê todos os exercicios  
+        **Treinador**: Apenas vê exercicios dos planos profissionais aos quais está associado   
+        **Cliente**: Apenas vê os exercicios dos plano aos quais está associado     
+        
+      parameters:
+        - $ref: '#/components/parameters/PlanoIdQuery'
+        - $ref: '#/components/parameters/ClienteIdAdminTreinadorQuery'
+      responses:
+        '200':
+          description: Lista de exercícios
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Exercicio' }
+        '400': { $ref: '#/components/responses/ErroValidacao' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+    post:
+      tags: [Exercícios]
+      summary: Criar exercício
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Apenas cria exercicios nos planos profissionais aos quais está associado   
+        **Cliente**: Apenas cria os exercicios nos planos criados por si (pessoais)  
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planoId, nome, grupoMuscular, series, reps]
+              properties:
+                planoId:       { type: integer }
+                nome:          { type: string }
+                grupoMuscular: { type: string }
+                series:        { type: integer }
+                reps:          { type: integer }
+                pesoKg:        { type: number }
+                notas:         { type: string }
+                ordem:         { type: integer }
+      responses:
+        '201': { description: Exercício criado }
+        '400': { $ref: '#/components/responses/ErroValidacao' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+
+  /exercicios/{id}:
+    get:
+      tags: [Exercícios]
+      summary: Obter exercício por ID
+      description: |
+        **Admin**: Vê todos os exercicios  
+        **Treinador**: Apenas vê exercicios dos planos profissionais aos quais está associado   
+        **Cliente**: Apenas vê os exercicios dos plano aos quais está associado     
+        
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Exercício encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exercicio' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+    put:
+      tags: [Exercícios]
+      summary: Atualizar exercício
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Apenas edita exercicios dos planos profissionais aos quais está associado   
+        **Cliente**: Edita os exercicios dos planos criados por si (pessoais) e `series`, `reps`, `pesoKg`, `notas` dos planos profissionais aos quais está associado
+        
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nome:          { type: string }
+                grupoMuscular: { type: string }
+                series:        { type: integer }
+                reps:          { type: integer }
+                pesoKg:        { type: number }
+                notas:         { type: string }
+                ordem:         { type: integer }
+      responses:
+        '200': { description: Exercício atualizado }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+    delete:
+      tags: [Exercícios]
+      summary: Apagar exercício
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Apenas apaga exercicios dos planos profissionais aos quais está associado   
+        **Cliente**:  Apenas apaga exercicios dos planos que criou (pessoais)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Exercício apagado }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+  # Sessões
+  /sessoes:
+    get:
+      tags: [Sessões]
+      summary: Listar sessões
+      description: |
+        **Admin**: Vê todas as sessões  
+        **Treinador**: Vê apenas sessões onde é o treinador responsável   
+        **Cliente**: Vê apenas as suas sessões
+      parameters:
+        - $ref: '#/components/parameters/EstadoSessaoQuery'
+        - $ref: '#/components/parameters/PlanoIdQuery'
+        - $ref: '#/components/parameters/ClienteIdAdminTreinadorQuery'
+      responses:
+        '200':
+          description: Lista de sessões
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Sessao' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+    post:
+      tags: [Sessões]
+      summary: Criar sessão 
+      description: |
+        Sessões sao aulas com o treinador.
+        São, por isso, do contexto profissional (não usam planos pessoais)    
+        **Admin**: Sem restrições  
+        **Treinador**: Cria apenas sessões para os planos aos quais está associado  
+        **Cliente**: Sem permissões
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planoId, dataSessao, duracaoMin]
+              properties:
+                planoId:    { type: integer }
+                clienteId:  { type: integer, description: "Opcional; se omitido é inferido pelo planoId" }
+                dataSessao: { type: string, format: date }
+                duracaoMin: { type: integer }
+                notas:      { type: string }
+      responses:
+        '201': { description: Sessão criada }
+        '400': { $ref: '#/components/responses/ErroValidacao' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+
+  /sessoes/{id}:
+    get:
+      tags: [Sessões]
+      summary: Obter sessão por ID
+      description: |
+        **Admin**: Vê todas as sessões  
+        **Treinador**: Vê apenas sessões onde é o treinador responsável   
+        **Cliente**: Vê apenas as suas sessões
+
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Sessão encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Sessao' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403':
+          description: Sem permissão
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+              example:
+                erro: "Acesso negado. Esta sessão não é sua."
+        '404':
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+              example:
+                erro: "Sessão não encontrada."
+
+    put:
+      tags: [Sessões]
+      summary: Atualizar sessão
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Edita apenas sessões às quais está associado  
+        **Cliente**: Só pode atualizar as `notas` nas suas próprias sessões como feedback
+        
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dataSessao: { type: string, format: date }
+                duracaoMin: { type: integer }
+                notas:      { type: string }
+                estado:
+                  type: string
+                  enum: [agendada, concluida, cancelada]
+      responses:
+        '200': { description: Sessão atualizada }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+    delete:
+      tags: [Sessões]
+      summary: Apagar sessão 
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Apaga apenas sessões às quais está associado  
+        **Cliente**: Sem permissões
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Sessão apagada }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+  # Avaliações Físicas
+  /avaliacoes:
+    get:
+      tags: [Avaliações Físicas]
+      summary: Listar avaliações físicas
+      description: |
+        **Admin**: Vê todas as avaliações  
+        **Treinador**: Apenas vê avaliações às quais está associado     
+        **Cliente**: Apenas vê avaliações às quais está associado      
+        
+      parameters:
+        - $ref: '#/components/parameters/ClienteIdAdminTreinadorQuery'
+
+      responses:
+        '200':
+          description: Lista de avaliações
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AvaliacaoFisica' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+    post:
+      tags: [Avaliações Físicas]
+      summary: Criar avaliação física
+      description: |
+        **Admin**: Sem restrições  
+        **Treinador**: Cria avaliação física profissional para um cliente (tem que pertencer a um plano com o mesmo treinador ou não ter nenhum treinador associado)  
+        **Cliente**: Cria avaliação física  pessoal para si próprio (sem associar nenhum treinador) 
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                clienteId:   { type: integer, description: "Obrigatório para treinadores" }
+                data:        { type: string, format: date }
+                pesoKg:      { type: number }
+                alturaCm:    { type: number }
+                percGordura: { type: number }
+                notas:       { type: string }
+            example:
+              clienteId: 7
+              data: "2026-04-30"
+              pesoKg: 70.5
+              alturaCm: 170
+              percGordura: 22.5
+              notas: "Avaliação trimestral"
+      responses:
+        '201': { description: Avaliação criada }
+        '400': { $ref: '#/components/responses/ErroValidacao' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+
+  /avaliacoes/{id}:
+    get:
+      tags: [Avaliações Físicas]
+      summary: Obter avaliação por ID
+      description: |
+        **Admin**: Vê todas as avaliações  
+        **Treinador**: Apenas vê avaliações às quais está associado     
+        **Cliente**: Apenas vê avaliações às quais está associado      
+        
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Avaliação encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvaliacaoFisica' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403':
+          description: Sem permissão
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+              example:
+                erro: "Acesso negado."
+        '404':
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+              example:
+                erro: "Avaliação não encontrada."
+
+    put:
+      tags: [Avaliações Físicas]
+      summary: Atualizar avaliação
+      description: |
+        **Admin**: Sem restrições   
+        **Treinador**: Apenas atualiza avaliações às quais está associado       
+        **Cliente**: Apenas atualiza avaliações pessoais, criadas pelo próprio cliente
+
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:        { type: string, format: date }
+                pesoKg:      { type: number }
+                alturaCm:    { type: number }
+                percGordura: { type: number }
+                notas:       { type: string }
+      responses:
+        '200': { description: Avaliação atualizada }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+    delete:
+      tags: [Avaliações Físicas]
+      summary: Apagar avaliação
+      description: |
+        **Admin**: Sem restrições   
+        **Treinador**: Apenas apaga avaliações às quais está associado       
+        **Cliente**: Apenas apaga avaliações pessoais, criadas pelo próprio cliente
+
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Avaliação apagada }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+  # Metas
+  /metas:
+    get:
+      tags: [Metas]
+      summary: Listar metas
+      description: |
+        **Admin**: Vê todas as metas  
+        **Treinador**: Apenas vê metas dos planos aos quais está associado     
+        **Cliente**: Vê as metas criadas para os seus planos pessoais e vê as metas dos planos profissionais aos quais está associado 
+      parameters:
+        - $ref: '#/components/parameters/ClienteIdAdminTreinadorQuery'
+        - $ref: '#/components/parameters/PlanoIdQuery'
+      responses:
+        '200':
+          description: Lista de metas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+    post:
+      tags: [Metas]
+      summary: Criar meta
+      description: |
+        **Admin**: Sem restrições
+        **Treinador**: Apenas cria metas para os planos profissionais aos quais está associado     
+        **Cliente**: penas cria metas para os planos pessoais  aos quais está associado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [descricao, planoId]
+              properties:
+                clienteId:  { type: integer }
+                planoId:    { type: integer }
+                descricao:  { type: string }
+                valorAlvo:  { type: number }
+                unidade:    { type: string }
+                prazo:      { type: string, format: date }
+            example:
+              cliente_id: 7
+              plano_id: 12
+              descricao: "Perder 5kg"
+              valorAlvo: 5
+              unidade: "kg"
+              prazo: "2026-06-30"
+      responses:
+        '201': { description: Meta criada }
+        '400': { $ref: '#/components/responses/ErroValidacao' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+
+  /metas/{id}:
+    get:
+      tags: [Metas]
+      summary: Obter meta por ID
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: Meta encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403':
+          description: Sem permissão
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+              example:
+                erro: "Acesso negado."
+        '404':
+          description: Recurso não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  erro: { type: string }
+              example:
+                erro: "Meta não encontrada."
+
+    put:
+      tags: [Metas]
+      summary: Atualizar meta
+      description: |
+        **Admin**: Sem restrições
+        **Treinador**: Apenas edita metas para os planos profissionais aos quais está associado     
+        **Cliente**: penas edita metas para os planos pessoais  aos quais está associado
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                descricao:  { type: string }
+                valorAlvo:  { type: number }
+                valorAtual: { type: number }
+                unidade:    { type: string }
+                prazo:      { type: string, format: date }
+                estado:
+                  type: string
+                  enum: [ativa, concluida, cancelada]
+      responses:
+        '200': { description: Meta atualizada }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+    delete:
+      tags: [Metas]
+      summary: Apagar meta
+      description: |
+        **Admin**: Sem restrições
+        **Treinador**: Apenas apaga metas para os planos profissionais aos quais está associado     
+        **Cliente**: penas apaga metas para os planos pessoais  aos quais está associado
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: Meta apagada }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+# Componentes
+components:
+  parameters:
+    PlanoIdQuery:
+      name: plano_id
+      in: query
+      required: false
+      schema: { type: integer }
+      description: Filtrar por plano (ID do plano)
+    ClienteIdAdminTreinadorQuery:
+      name: cliente_id
+      in: query
+      required: false
+      schema: { type: integer }
+      description: |
+        Filtrar por cliente (apenas **admin** ou **treinador**).
+        Para **treinador**, só funciona para clientes do seu âmbito (clientes em planos profissionais do treinador autenticado)
+        e para clientes sem qualquer plano profissional associado a treinador.
+    TreinadorIdAdminQuery:
+      name: treinador_id
+      in: query
+      required: false
+      schema: { type: integer }
+      description: Filtrar clientes por treinador (apenas admin)
+    EstadoSessaoQuery:
+      name: estado
+      in: query
+      required: false
+      schema: { type: string, enum: [agendada, concluida, cancelada] }
+      description: Filtrar por estado
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    basicAuth:
+      type: http
+      scheme: basic
+
+
+  responses:
+    NaoAutenticado:
+      description: Não autenticado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              erro: { type: string }
+          example:
+            erro: "Autenticação necessária. Faça login em /login ou use X-API-Key."
+    AcessoNegado:
+      description: Sem permissão
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              erro: { type: string }
+          example:
+            erro: "Acesso negado. Requer role: treinador ou admin."
+    NaoEncontrado:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              erro: { type: string }
+    ErroValidacao:
+      description: Dados inválidos
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              erro: { type: string }
+
+  schemas:
+    PlanoTreino:
+      type: object
+      properties:
+        id:         { type: integer }
+        titulo:     { type: string }
+        descricao:  { type: string }
+        objetivo:   { type: string, enum: [emagrecimento, hipertrofia, resistencia, flexibilidade, saude_geral] }
+        duracaoSem: { type: integer }
+        tipo:       { type: string, enum: [pessoal, profissional] }
+        treinadorId: { type: integer, nullable: true }
+        clienteId:  { type: integer }
+        ativo:      { type: boolean }
+        treinador:  { $ref: '#/components/schemas/UtilizadorResumo' }
+        cliente:    { $ref: '#/components/schemas/UtilizadorResumo' }
+
+    Exercicio:
+      type: object
+      properties:
+        id:            { type: integer }
+        planoId:       { type: integer }
+        nome:          { type: string }
+        grupoMuscular: { type: string }
+        series:        { type: integer }
+        reps:          { type: integer }
+        pesoKg:        { type: number, nullable: true }
+        notas:         { type: string, nullable: true }
+        ordem:         { type: integer }
+
+    Sessao:
+      type: object
+      properties:
+        id:         { type: integer }
+        planoId:    { type: integer }
+        clienteId:  { type: integer }
+        treinadorId: { type: integer }
+        dataSessao: { type: string, format: date }
+        duracaoMin: { type: integer }
+        notas:      { type: string, nullable: true }
+        estado:     { type: string, enum: [agendada, concluida, cancelada] }
+
+    AvaliacaoFisica:
+      type: object
+      properties:
+        id:          { type: integer }
+        clienteId:   { type: integer }
+        tipo:        { type: string, enum: [pessoal, profissional] }
+        data:        { type: string, format: date }
+        pesoKg:      { type: number, nullable: true }
+        alturaCm:    { type: number, nullable: true }
+        percGordura: { type: number, nullable: true }
+        imc:         { type: number, nullable: true }
+        notas:       { type: string, nullable: true }
+
+    Meta:
+      type: object
+      properties:
+        id:         { type: integer }
+        clienteId:  { type: integer }
+        planoId:    { type: integer, nullable: true }
+        tipo:       { type: string, enum: [pessoal, profissional] }
+        descricao:  { type: string }
+        valorAlvo:  { type: number, nullable: true }
+        valorAtual: { type: number }
+        unidade:    { type: string, nullable: true }
+        prazo:      { type: string, format: date, nullable: true }
+        estado:     { type: string, enum: [ativa, concluida, cancelada] }
+
+    UtilizadorResumo:
+      type: object
+      properties:
+        id:          { type: integer }
+        username:    { type: string }
+        displayName: { type: string }
+        email:       { type: string }
+        avatarUrl:   { type: string }
+        role:        { type: string, enum: [admin, treinador, cliente] }
