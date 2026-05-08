@@ -1,3 +1,7 @@
+/* 
+Os ficheiros *seed* foram criados com IA de maneira a preencher com dados a estrutura dada. Exemplo de prompt: "gera dados aleatórios de modo a preencher os campos apresentados."
+*/
+
 'use strict';
 
 const { QueryTypes } = require('sequelize');
