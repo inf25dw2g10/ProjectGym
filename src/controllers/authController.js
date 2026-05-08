@@ -240,20 +240,30 @@ function login(req, res, next) {
   })(req, res, next);
 }
 
+function wantsJsonLogoutResponse(req) {
+ // Retorna JSON no swagger e redireciona para /login na web.
+  return req.accepts(['json', 'html']) === 'json';
+}
+
 function logout(req, res) {
   // Captura dados antes de limpar sessão para log de auditoria.
   const autenticado = typeof req.isAuthenticated === 'function' && req.isAuthenticated();
   const userId = req.user?.id ?? null;
   const username = req.user?.username ?? '(desconhecido)';
   const email = req.user?.email ?? '(não disponível)';
+  const sendJson = wantsJsonLogoutResponse(req);
 
   if (!autenticado) {
-    return res.status(401).json({ erro: 'Não existe sessão autenticada.' });
+    if (sendJson) {
+      return res.status(401).json({ erro: 'Não existe sessão autenticada.' });
+    }
+    return res.redirect(302, '/login');
   }
 
   req.logout((err) => {
     if (err) {
-      return res.status(500).json({ erro: 'Erro ao terminar sessão.' });
+      if (sendJson) return res.status(500).json({ erro: 'Erro ao terminar sessão.' });
+      return res.redirect(302, '/login');
     }
 
     console.log('\n┌─────────────────────────────────────────────');
@@ -262,7 +272,11 @@ function logout(req, res) {
     console.log(`│  Username : ${username}`);
     console.log(`│  Email    : ${email}`);
     console.log('└─────────────────────────────────────────────\n');
-    return res.status(200).json({ mensagem: 'Logout efetuado com sucesso.' });
+
+    if (sendJson) {
+      return res.status(200).json({ mensagem: 'Logout efetuado com sucesso.' });
+    }
+    return res.redirect(302, '/login');
   });
 }
 
