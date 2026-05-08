@@ -1,3 +1,10 @@
+/* IA DISCLAIMER
+Foi utilizado IA para a construção do script de testes. Exemplo de prompt: Cria um script que cobre todas as regras de autorização para esta API
+Foi utilizado IA para a construção de elementos decorativos, como o dashboard e a página /login. Exemplo de prompt: Cria um dashboard e uma página de login simples com tema escuro para esta API, que inclua os diferentes tipos de autenticação
+Foi utilizado IA para a construção da base de dados e preenchimento das mesmas. Exemplo de prompt: Gera uma base de dados e preenche-os com dados aleatórios para esta API
+Por fim também usamos IA para fins de debugging, compreensão  e aprimoramento em pequenos detalhes do projeto
+*/
+
 * {
     box-sizing: border-box;
     margin: 0;
