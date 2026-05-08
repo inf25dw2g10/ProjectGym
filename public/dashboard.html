@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gym Project API - Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard_style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <p class="label">Dashboard</p>
+      <h1>Project<span>/</span>Gym</h1>
+      <p class="subtitle">Autenticado com sucesso.</p>
+    </div>
+
+    <div class="resource-list">
+      <a class="resource-item" href="/planos">
+        <span class="item-method">GET</span>
+        <span class="item-path">/planos</span>
+        <span class="item-desc">Planos de treino</span>
+        <span class="item-arrow">→</span>
+      </a>
+      <a class="resource-item" href="/exercicios">
+        <span class="item-method">GET</span>
+        <span class="item-path">/exercicios</span>
+        <span class="item-desc">Exercícios (requer ?plano_id=)</span>
+        <span class="item-arrow">→</span>
+      </a>
+      <a class="resource-item" href="/sessoes">
+        <span class="item-method">GET</span>
+        <span class="item-path">/sessoes</span>
+        <span class="item-desc">Sessões de treino</span>
+        <span class="item-arrow">→</span>
+      </a>
+      <a class="resource-item" href="/avaliacoes">
+        <span class="item-method">GET</span>
+        <span class="item-path">/avaliacoes</span>
+        <span class="item-desc">Avaliações físicas</span>
+        <span class="item-arrow">→</span>
+      </a>
+      <a class="resource-item" href="/metas">
+        <span class="item-method">GET</span>
+        <span class="item-path">/metas</span>
+        <span class="item-desc">Metas de treino</span>
+        <span class="item-arrow">→</span>
+      </a>
+      <a class="resource-item" href="/users">
+        <span class="item-method">GET</span>
+        <span class="item-path">/users</span>
+        <span class="item-desc">Utilizadores - treinador / admin</span>
+        <span class="item-arrow">→</span>
+      </a>
+      <a class="resource-item" href="/users/me">
+        <span class="item-method">GET</span>
+        <span class="item-path">/users/me</span>
+        <span class="item-desc">O meu perfil</span>
+        <span class="item-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="docs-section">
+      <a class="resource-item" href="/docs">
+        <span class="item-method" style="width:auto;margin-right:20px;color:#555">OpenAPI 3.0</span>
+        <span class="item-path">/docs</span>
+        <span class="item-desc">Swagger UI interativo</span>
+        <span class="item-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="footer">
+      <p>OAuth 2.0 - Authorization Code Flow</p>
+      <a href="/auth/logout">Terminar sessao</a>
+    </div>
+  </div>
+</body>
+</html>

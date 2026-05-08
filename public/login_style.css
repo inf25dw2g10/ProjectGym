@@ -1,0 +1,287 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif !important;
+}
+
+body {
+    background: #0a0a0a;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.card {
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 400px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header {
+    padding: 48px 40px 24px;
+    border-bottom: 1px solid #2a2a2a;
+    text-align: center;
+}
+
+.card-header .label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #555;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+.card-header h1 {
+    font-size: 1.7rem;
+    font-weight: 300;
+    color: #fff;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.card-header h1 span {
+    color: #555;
+}
+
+.tabs {
+    display: flex;
+    background: #0d0d0d;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.tab {
+    flex: 1;
+    padding: 14px 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #444;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab.active {
+    color: #fff;
+    border-bottom-color: #555;
+    background: #141414;
+}
+
+.card-body {
+    padding: 32px 40px;
+    min-height: 320px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.panel {
+    display: none;
+    width: 100%;
+}
+
+.panel.active {
+    display: block;
+}
+
+.field {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.field label {
+    display: block;
+    font-size: 0.65rem;
+    color: #555;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+/* Estrutura para o botão de mostrar password[cite: 2] */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.field input {
+    width: 100%;
+    padding: 14px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+    color: #fff;
+    font-size: 0.85rem;
+    outline: none;
+    text-align: left;
+    transition: border-color 0.2s;
+}
+
+/* Padding extra para o texto não ficar por baixo do botão[cite: 2] */
+.field input[type="password"],
+.field input[type="text"] {
+    padding-right: 80px;
+}
+
+.field input::placeholder {
+    color: #333;
+}
+
+/* Botão Mostrar/Esconder[cite: 2] */
+.toggle-pass {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    color: #444;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s;
+    user-select: none;
+}
+
+.toggle-pass:hover {
+    color: #888;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    padding: 16px 20px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 2px;
+    color: #ccc;
+    text-decoration: none;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+}
+
+.btn:hover {
+    border-color: #555;
+    color: #fff;
+    background: #1f1f1f;
+}
+
+.btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    margin-right: 12px;
+    opacity: 0.8;
+}
+
+.btn .btn-arrow {
+    position: absolute;
+    right: 20px;
+    opacity: 0.2;
+    transition: all 0.2s;
+}
+
+.btn:hover .btn-arrow {
+    opacity: 0.6;
+    transform: translateX(3px);
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: #fff;
+    border: none;
+    border-radius: 2px;
+    color: #0a0a0a;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: opacity 0.2s;
+}
+
+.submit-btn:hover {
+    opacity: 0.9;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 22px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #2a2a2a;
+}
+
+.divider span {
+    font-size: 0.65rem;
+    color: #444;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.feedback {
+    display: none;
+    font-size: 0.75rem;
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 2px;
+    text-align: center;
+}
+
+.feedback.error {
+    color: #ff5555;
+    background: #1a0a0a;
+    border: 1px solid #3a1a1a;
+}
+
+.feedback.success {
+    color: #ccc;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+}
+
+.feedback.show {
+    display: block;
+}
+
+.card-footer {
+    padding: 24px 40px;
+    border-top: 1px solid #2a2a2a;
+    text-align: center;
+}
+
+.card-footer p {
+    font-size: 0.72rem;
+    color: #444;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
