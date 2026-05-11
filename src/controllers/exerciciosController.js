@@ -56,7 +56,7 @@ async function listar(req, res) {
     });
 
     if (req.user.role === 'treinador') {
-      // Segurança extra: remove planos que não pertencem ao treinador.
+      // remove planos que não pertencem ao treinador.
       planos = planos.filter((p) => {
         if (p.treinadorId === req.user.id) return true;
         return p.treinadorId === null;
