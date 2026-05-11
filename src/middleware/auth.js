@@ -105,7 +105,6 @@ function basicAuthLoginMiddleware(req, res, next) {
   const usernameOrEmailFromBody = req.body.usernameOrEmail || req.body.email;
   const passwordFromBody = req.body.password;
 
-  // Quando body e header existem ao mesmo tempo, o body ganha.
   if (usernameOrEmailFromBody && passwordFromBody) {
     req.body.usernameOrEmail = usernameOrEmailFromBody;
     req.body.password = passwordFromBody;
