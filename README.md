@@ -1,6 +1,6 @@
 # Project Gym
 
-Repositório do projeto desenvolvido para a cadeira de **Desenvolvimento Web II**, unidade curricular do curso de Informática da UMAIA.  
+Repositório do projeto desenvolvido para a a unidade curricular **Desenvolvimento Web II**, do curso de Informática da UMAIA.  
 
 Desenvolvido pelo Grupo 10 - inf26dw2g10
 
