@@ -13,22 +13,20 @@ Organização **GitHub**: [inf25dw2g10](https://github.com/inf25dw2g10/ProjectGy
 Repositório do **DockerHub**: [inf25dw2g10](https://hub.docker.com/repositories/inf25dw2g10)
 
 ## Descrição do tema
-Uma API REST para a gestão de **treinadores** e **clientes**. A plataforma permite que os treinadores possam criar planos de treino personalizados, definir exercícios, acompanhar sessões, registar avaliações físicas e monitorar metas. 
+Uma API REST para a gestão de **treinadores** e **clientes** num ginásio. A plataforma permite que os **treinadores** possam criar planos de treino personalizados, definir exercícios, acompanhar sessões, registar avaliações físicas e monitorar metas dos seus **clientes**, sendo que estes conseguem também ter acesso aos seus recursos. Os **admin** têm permissão para alterar os recursos sem qualquer restrição.
 
 A autenticação suporta três métodos:   
-- **Basic Auth** (username/email + password com devolução de `apiKey`)  
-- **X-API-Key** (header `X-API-Key` em todos os pedidos)  
+- **Basic Auth** (username/email + password com devolução de `apiKey`);  
+- **X-API-Key** (header `X-API-Key` em todos os pedidos);  
 - **OAuth2** (GitHub e Google via browser). 
 
-A autorização é baseada em perfis (`admin`, `treinador`, `cliente`)  
+A autorização é baseada em perfis (`admin`, `treinador`, `cliente`).  
 
-## Regras de autorização
+## Regras de Autorização
 
 - **Admin**: pode executar operações em todos os recursos, desde que respeitem validações de dados.
 - **Treinador**: atua apenas sobre clientes e recursos associados ao seu `id`; não pode operar sobre recursos de outros treinadores.
 - **Cliente**: atua apenas sobre recursos do próprio `id`; não pode aceder/alterar recursos de outros utilizadores.
-
-## Matriz de regras por recurso
 
 ### Planos de treino
 
@@ -44,14 +42,14 @@ A autorização é baseada em perfis (`admin`, `treinador`, `cliente`)
 
 ### Exercícios
 
-- Todo exercício pertence a um plano.
+- Todo o exercício pertence a um plano.
 - **Cliente**:
   - em plano pessoal próprio: pode criar/editar/apagar;
   - em plano profissional próprio: pode apenas atualizar `series`, `reps`, `pesoKg`, `notas`;
-  - não pode operar exercícios de outros clientes.
+  - não pode alterar exercícios de outros clientes.
 - **Treinador**:
-  - só opera exercícios em planos profissionais dos quais é o treinador responsável;
-  - não opera exercícios de planos de outros treinadores/clientes.
+  - só pode alterar exercícios em planos profissionais dos quais é o treinador responsável;
+  - não pode alterar exercícios de planos de outros treinadores/clientes.
 
 ### Sessões
 
@@ -104,15 +102,12 @@ Existe um script dedicado para validar regras de autorização por role e por re
 
 - Script: `scripts/roleRulesCheck.js`
 - Execução: `npm run test:roles`
-
-
+  
 O script:
 
 - autentica `admin`, `treinador` e `cliente`;
 - cobre cenários positivos e negativos por recurso;
-- faz descoberta dinâmica de dados para minimizar falsos negativos;
-- reporta `pass`, `fail` e `skip` com detalhe;
-- tenta cleanup automático dos recursos temporários criados durante os testes.
+- reporta `pass`, `fail` e `skip`.
 
 ## Organização do repositório
 
